@@ -77,14 +77,14 @@ export default function LeavingPage() {
       createdAt: new Date().toISOString(),
     };
 
-    const existingSpotsText = localStorage.getItem("spotswap_spots");
+    const existingSpotsText = localStorage.getItem("park_habibi_spots");
     const existingSpots: ParkingSpot[] = existingSpotsText
       ? JSON.parse(existingSpotsText)
       : [];
 
     const updatedSpots = [newSpot, ...existingSpots];
 
-    localStorage.setItem("spotswap_spots", JSON.stringify(updatedSpots));
+    localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
 
     setPosted(true);
   }
@@ -93,27 +93,33 @@ export default function LeavingPage() {
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <div className="mx-auto max-w-xl">
         <a href="/" className="text-sm text-slate-400 hover:text-white">
-          ← Back to home
+          ← Back to Park Habibi
         </a>
 
-        <section className="mt-10 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-emerald-400">
-              I&apos;m leaving
-            </p>
-            <h1 className="mt-2 text-3xl font-bold">
-              Post your parking spot
-            </h1>
-            <p className="mt-3 text-slate-400">
-              Tell nearby drivers when you&apos;re leaving so they can reach you
-              before the spot is gone.
-            </p>
-          </div>
+        <section className="mt-10">
+          <p className="text-sm font-medium text-emerald-400">
+            Someone&apos;s leaving
+          </p>
 
+          <h1 className="mt-2 text-4xl font-black tracking-tight">
+            Share your parking spot
+          </h1>
+
+          <p className="mt-4 text-xl font-semibold leading-8 text-slate-200">
+            Leaving soon? Let someone nearby know so they can arrive as you move
+            out.
+          </p>
+
+          <p className="mt-2 text-lg font-semibold text-emerald-400">
+            No more circling, habibi.
+          </p>
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl">
           {posted && (
             <div className="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-              Your spot has been posted for {leavingIn}. Open the Looking page
-              to see it.
+              Your spot has been posted for {leavingIn}. Someone looking for
+              parking can now see it.
             </div>
           )}
 
@@ -235,7 +241,7 @@ export default function LeavingPage() {
                   : "cursor-not-allowed bg-slate-800 text-slate-500"
               }`}
             >
-              Post Spot
+              Share Spot
             </button>
           </form>
         </section>

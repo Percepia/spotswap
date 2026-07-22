@@ -17,7 +17,7 @@ export default function LookingPage() {
   const [reservedSpotId, setReservedSpotId] = useState<number | null>(null);
 
   useEffect(() => {
-    const savedSpotsText = localStorage.getItem("spotswap_spots");
+    const savedSpotsText = localStorage.getItem("park_habibi_spots");
     const savedSpots: ParkingSpot[] = savedSpotsText
       ? JSON.parse(savedSpotsText)
       : [];
@@ -26,7 +26,7 @@ export default function LookingPage() {
   }, []);
 
   function clearTestSpots() {
-    localStorage.removeItem("spotswap_spots");
+    localStorage.removeItem("park_habibi_spots");
     setSpots([]);
     setReservedSpotId(null);
   }
@@ -35,26 +35,26 @@ export default function LookingPage() {
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <div className="mx-auto max-w-5xl">
         <a href="/" className="text-sm text-slate-400 hover:text-white">
-          ← Back to home
+          ← Back to Park Habibi
         </a>
 
         <section className="mt-10">
           <p className="text-sm font-medium text-emerald-400">
-            I&apos;m looking
+            Want to park?
           </p>
           <h1 className="mt-2 text-3xl font-bold">
-            Find a spot opening near you
+            Find a spot before it&apos;s gone
           </h1>
           <p className="mt-3 max-w-2xl text-slate-400">
-            See nearby drivers who are about to leave and coordinate a parking
-            handover.
+            Someone&apos;s leaving. You&apos;re arriving. Coordinate a smooth
+            parking handover nearby.
           </p>
         </section>
 
         {reservedSpotId && (
           <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-            Spot reserved. Drive to the location and wait for the driver to
-            leave.
+            Spot reserved. Head to the location and wait for the driver to move
+            out.
           </div>
         )}
 
@@ -72,7 +72,7 @@ export default function LookingPage() {
                   MVP status
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Posted spots now save inside your browser. Next step is
+                  Posted spots now save inside your browser. Next step is a real
                   database, so everyone can see the same live spots.
                 </p>
               </div>
@@ -92,14 +92,14 @@ export default function LookingPage() {
                 <p className="text-4xl">🅿️</p>
                 <h2 className="mt-4 text-xl font-bold">No spots yet</h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Go to the Leaving page, post a spot, then come back here.
+                  No one is leaving right now. Share a test spot first.
                 </p>
 
                 <a
                   href="/leaving"
                   className="mt-5 inline-block rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-emerald-400"
                 >
-                  Post a test spot
+                  Share a test spot
                 </a>
               </div>
             )}
