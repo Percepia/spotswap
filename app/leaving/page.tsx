@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type CarProfile = {
   carModel: string;
@@ -13,7 +14,7 @@ type ParkingSpot = {
   area: string;
   landmark: string;
   leavingIn: string;
-  note: string;
+  note: string | null;
   location: string;
   createdAt: string;
   status:
@@ -29,10 +30,57 @@ type ParkingSpot = {
   leaverCarColor: string;
   leaverPlateNumber: string;
 
-  lookerCarModel?: string;
-  lookerCarColor?: string;
-  lookerPlateNumber?: string;
+  lookerCarModel?: string | null;
+  lookerCarColor?: string | null;
+  lookerPlateNumber?: string | null;
 };
+
+type SupabaseSpot = {
+  id: number;
+  area: string;
+  landmark: string;
+  leaving_in: string;
+  note: string | null;
+  location: string;
+  created_at: string;
+  status:
+    | "available"
+    | "reserved"
+    | "arrived"
+    | "spotted"
+    | "leaving"
+    | "completed"
+    | "cancelled";
+
+  leaver_car_model: string;
+  leaver_car_color: string;
+  leaver_plate_number: string;
+
+  looker_car_model: string | null;
+  looker_car_color: string | null;
+  looker_plate_number: string | null;
+};
+
+function convertSpotFromDatabase(spot: SupabaseSpot): ParkingSpot {
+  return {
+    id: spot.id,
+    area: spot.area,
+    landmark: spot.landmark,
+    leavingIn: spot.leaving_in,
+    note: spot.note,
+    location: spot.location,
+    createdAt: spot.created_at,
+    status: spot.status,
+
+    leaverCarModel: spot.leaver_car_model,
+    leaverCarColor: spot.leaver_car_color,
+    leaverPlateNumber: spot.leaver_plate_number,
+
+    lookerCarModel: spot.looker_car_model,
+    lookerCarColor: spot.looker_car_color,
+    lookerPlateNumber: spot.looker_plate_number,
+  };
+}
 
 export default function LeavingPage() {
   const [profile, setProfile] = useState<CarProfile | null>(null);
@@ -48,6 +96,8 @@ export default function LeavingPage() {
   const [hasLocation, setHasLocation] = useState(false);
   const [posted, setPosted] = useState(false);
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+  const [isLoadingSpots, setIsLoadingSpots] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -63,13 +113,26 @@ export default function LeavingPage() {
     setProfile(savedProfile);
   }
 
-  function loadSpots() {
-    const savedSpotsText = localStorage.getItem("park_habibi_spots");
-    const savedSpots: ParkingSpot[] = savedSpotsText
-      ? JSON.parse(savedSpotsText)
-      : [];
+  async function loadSpots() {
+    setIsLoadingSpots(true);
 
-    setSpots(savedSpots);
+    const { data, error } = await supabase
+      .from("parking_spots")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      alert("Could not load spots: " + error.message);
+      setIsLoadingSpots(false);
+      return;
+    }
+
+    const convertedSpots = (data || []).map((spot) =>
+      convertSpotFromDatabase(spot as SupabaseSpot)
+    );
+
+    setSpots(convertedSpots);
+    setIsLoadingSpots(false);
   }
 
   function saveProfile() {
@@ -136,7 +199,7 @@ export default function LeavingPage() {
     setLocationStatus("Test location selected: Shabia, Abu Dhabi.");
   }
 
-  function postSpot() {
+  async function postSpot() {
     if (!profile) {
       alert("Please set up your car first.");
       return;
@@ -157,49 +220,55 @@ export default function LeavingPage() {
       return;
     }
 
-    const newSpot: ParkingSpot = {
-      id: Date.now(),
+    setIsPosting(true);
+
+    const { error } = await supabase.from("parking_spots").insert({
       area,
       landmark,
-      leavingIn,
+      leaving_in: leavingIn,
       note,
       location: "Shabia, Abu Dhabi",
-      createdAt: new Date().toISOString(),
       status: "available",
 
-      leaverCarModel: profile.carModel,
-      leaverCarColor: profile.carColor,
-      leaverPlateNumber: profile.plateNumber,
-    };
+      leaver_car_model: profile.carModel,
+      leaver_car_color: profile.carColor,
+      leaver_plate_number: profile.plateNumber,
+    });
 
-    const existingSpotsText = localStorage.getItem("park_habibi_spots");
-    const existingSpots: ParkingSpot[] = existingSpotsText
-      ? JSON.parse(existingSpotsText)
-      : [];
+    if (error) {
+      alert("Could not post spot: " + error.message);
+      setIsPosting(false);
+      return;
+    }
 
-    const updatedSpots = [newSpot, ...existingSpots];
-
-    localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
-
-    setSpots(updatedSpots);
     setPosted(true);
+    setIsPosting(false);
+
+    setArea("");
+    setLandmark("");
+    setNote("");
+    setLeavingIn("5 min");
+    setHasLocation(false);
+    setLocationStatus("");
+
+    await loadSpots();
   }
 
-  function updateSpotStatus(
+  async function updateSpotStatus(
     spotId: number,
     newStatus: ParkingSpot["status"]
   ) {
-    const savedSpotsText = localStorage.getItem("park_habibi_spots");
-    const savedSpots: ParkingSpot[] = savedSpotsText
-      ? JSON.parse(savedSpotsText)
-      : [];
+    const { error } = await supabase
+      .from("parking_spots")
+      .update({ status: newStatus })
+      .eq("id", spotId);
 
-    const updatedSpots = savedSpots.map((spot) =>
-      spot.id === spotId ? { ...spot, status: newStatus } : spot
-    );
+    if (error) {
+      alert("Could not update handover: " + error.message);
+      return;
+    }
 
-    localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
-    setSpots(updatedSpots);
+    await loadSpots();
   }
 
   const myPostedSpots = profile
@@ -399,14 +468,14 @@ export default function LeavingPage() {
                     </div>
 
                     <div className="rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-400">
-                      Beta
+                      Supabase
                     </div>
                   </div>
 
                   {posted && (
                     <div className="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-                      Your spot has been posted for {leavingIn}. Someone
-                      looking for parking can now reserve it.
+                      Your spot has been posted to the database. Someone looking
+                      for parking can now reserve it.
                     </div>
                   )}
 
@@ -531,13 +600,14 @@ export default function LeavingPage() {
                     <button
                       type="button"
                       onClick={postSpot}
+                      disabled={!hasLocation || isPosting}
                       className={`w-full rounded-2xl px-6 py-4 font-bold transition ${
-                        hasLocation
+                        hasLocation && !isPosting
                           ? "bg-emerald-500 text-slate-950 hover:-translate-y-0.5 hover:bg-emerald-400"
                           : "cursor-not-allowed bg-slate-800 text-slate-500"
                       }`}
                     >
-                      Share Spot
+                      {isPosting ? "Posting..." : "Share Spot"}
                     </button>
                   </form>
                 </section>
@@ -558,7 +628,7 @@ export default function LeavingPage() {
                       onClick={loadSpots}
                       className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-emerald-500 hover:text-emerald-400"
                     >
-                      Refresh
+                      {isLoadingSpots ? "Loading..." : "Refresh"}
                     </button>
                   </div>
 

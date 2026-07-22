@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type CarProfile = {
   carModel: string;
@@ -13,7 +14,7 @@ type ParkingSpot = {
   area: string;
   landmark: string;
   leavingIn: string;
-  note: string;
+  note: string | null;
   location: string;
   createdAt: string;
   status:
@@ -29,10 +30,57 @@ type ParkingSpot = {
   leaverCarColor: string;
   leaverPlateNumber: string;
 
-  lookerCarModel?: string;
-  lookerCarColor?: string;
-  lookerPlateNumber?: string;
+  lookerCarModel?: string | null;
+  lookerCarColor?: string | null;
+  lookerPlateNumber?: string | null;
 };
+
+type SupabaseSpot = {
+  id: number;
+  area: string;
+  landmark: string;
+  leaving_in: string;
+  note: string | null;
+  location: string;
+  created_at: string;
+  status:
+    | "available"
+    | "reserved"
+    | "arrived"
+    | "spotted"
+    | "leaving"
+    | "completed"
+    | "cancelled";
+
+  leaver_car_model: string;
+  leaver_car_color: string;
+  leaver_plate_number: string;
+
+  looker_car_model: string | null;
+  looker_car_color: string | null;
+  looker_plate_number: string | null;
+};
+
+function convertSpotFromDatabase(spot: SupabaseSpot): ParkingSpot {
+  return {
+    id: spot.id,
+    area: spot.area,
+    landmark: spot.landmark,
+    leavingIn: spot.leaving_in,
+    note: spot.note,
+    location: spot.location,
+    createdAt: spot.created_at,
+    status: spot.status,
+
+    leaverCarModel: spot.leaver_car_model,
+    leaverCarColor: spot.leaver_car_color,
+    leaverPlateNumber: spot.leaver_plate_number,
+
+    lookerCarModel: spot.looker_car_model,
+    lookerCarColor: spot.looker_car_color,
+    lookerPlateNumber: spot.looker_plate_number,
+  };
+}
 
 export default function LookingPage() {
   const [profile, setProfile] = useState<CarProfile | null>(null);
@@ -41,7 +89,8 @@ export default function LookingPage() {
   const [setupPlateNumber, setSetupPlateNumber] = useState("");
 
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
-  const [reservedSpotId, setReservedSpotId] = useState<number | null>(null);
+  const [isLoadingSpots, setIsLoadingSpots] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -57,13 +106,28 @@ export default function LookingPage() {
     setProfile(savedProfile);
   }
 
-  function loadSpots() {
-    const savedSpotsText = localStorage.getItem("park_habibi_spots");
-    const savedSpots: ParkingSpot[] = savedSpotsText
-      ? JSON.parse(savedSpotsText)
-      : [];
+  async function loadSpots() {
+    setIsLoadingSpots(true);
 
-    setSpots(savedSpots);
+    const { data, error } = await supabase
+      .from("parking_spots")
+      .select("*")
+      .neq("status", "completed")
+      .neq("status", "cancelled")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      alert("Could not load spots: " + error.message);
+      setIsLoadingSpots(false);
+      return;
+    }
+
+    const convertedSpots = (data || []).map((spot) =>
+      convertSpotFromDatabase(spot as SupabaseSpot)
+    );
+
+    setSpots(convertedSpots);
+    setIsLoadingSpots(false);
   }
 
   function saveProfile() {
@@ -100,51 +164,67 @@ export default function LookingPage() {
     setSetupPlateNumber("");
   }
 
-  function clearTestSpots() {
-    localStorage.removeItem("park_habibi_spots");
-    setSpots([]);
-    setReservedSpotId(null);
+  async function clearCompletedAndCancelled() {
+    const { error } = await supabase
+      .from("parking_spots")
+      .delete()
+      .in("status", ["completed", "cancelled"]);
+
+    if (error) {
+      alert("Could not clear old spots: " + error.message);
+      return;
+    }
+
+    await loadSpots();
   }
 
-  function updateSpot(updatedSpot: ParkingSpot) {
-    const savedSpotsText = localStorage.getItem("park_habibi_spots");
-    const savedSpots: ParkingSpot[] = savedSpotsText
-      ? JSON.parse(savedSpotsText)
-      : [];
-
-    const updatedSpots = savedSpots.map((spot) =>
-      spot.id === updatedSpot.id ? updatedSpot : spot
-    );
-
-    localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
-    setSpots(updatedSpots);
-  }
-
-  function reserveHandover(spot: ParkingSpot) {
+  async function reserveHandover(spot: ParkingSpot) {
     if (!profile) {
       alert("Please set up your car first.");
       return;
     }
 
-    const updatedSpot: ParkingSpot = {
-      ...spot,
-      status: "reserved",
-      lookerCarModel: profile.carModel,
-      lookerCarColor: profile.carColor,
-      lookerPlateNumber: profile.plateNumber,
-    };
+    setIsUpdating(true);
 
-    updateSpot(updatedSpot);
-    setReservedSpotId(spot.id);
+    const { error } = await supabase
+      .from("parking_spots")
+      .update({
+        status: "reserved",
+        looker_car_model: profile.carModel,
+        looker_car_color: profile.carColor,
+        looker_plate_number: profile.plateNumber,
+      })
+      .eq("id", spot.id)
+      .eq("status", "available");
+
+    if (error) {
+      alert("Could not reserve handover: " + error.message);
+      setIsUpdating(false);
+      return;
+    }
+
+    setIsUpdating(false);
+    await loadSpots();
   }
 
-  function markArrived(spot: ParkingSpot) {
-    updateSpot({
-      ...spot,
-      status: "arrived",
-    });
+  async function markArrived(spot: ParkingSpot) {
+    setIsUpdating(true);
 
-    setReservedSpotId(spot.id);
+    const { error } = await supabase
+      .from("parking_spots")
+      .update({
+        status: "arrived",
+      })
+      .eq("id", spot.id);
+
+    if (error) {
+      alert("Could not update arrival: " + error.message);
+      setIsUpdating(false);
+      return;
+    }
+
+    setIsUpdating(false);
+    await loadSpots();
   }
 
   const activeSpots = spots.filter(
@@ -208,10 +288,10 @@ export default function LookingPage() {
                 </div>
 
                 <button
-                  onClick={clearTestSpots}
+                  onClick={clearCompletedAndCancelled}
                   className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-red-400 hover:text-red-300"
                 >
-                  Clear test spots
+                  Clear old
                 </button>
               </div>
 
@@ -236,11 +316,10 @@ export default function LookingPage() {
 
                     <div className="mx-auto mt-6 max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-4 text-left">
                       <p className="text-sm font-semibold text-slate-300">
-                        Why?
+                        Backend status
                       </p>
                       <p className="mt-2 text-sm leading-6 text-slate-500">
-                        This prevents people from taking the spot without
-                        committing to the handover.
+                        This page now reads and updates live data from Supabase.
                       </p>
                     </div>
                   </div>
@@ -366,7 +445,7 @@ export default function LookingPage() {
                     onClick={loadSpots}
                     className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-emerald-500 hover:text-emerald-400"
                   >
-                    Refresh
+                    {isLoadingSpots ? "Loading..." : "Refresh"}
                   </button>
                 </div>
 
@@ -495,18 +574,28 @@ export default function LookingPage() {
                     {canReserve && (
                       <button
                         onClick={() => reserveHandover(spot)}
-                        className="mt-4 w-full rounded-2xl bg-emerald-500 px-4 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                        disabled={isUpdating}
+                        className={`mt-4 w-full rounded-2xl px-4 py-3 font-bold transition ${
+                          isUpdating
+                            ? "cursor-not-allowed bg-slate-800 text-slate-500"
+                            : "bg-emerald-500 text-slate-950 hover:-translate-y-0.5 hover:bg-emerald-400"
+                        }`}
                       >
-                        Reserve handover
+                        {isUpdating ? "Working..." : "Reserve handover"}
                       </button>
                     )}
 
                     {isMyReservation && spot.status === "reserved" && (
                       <button
                         onClick={() => markArrived(spot)}
-                        className="mt-4 w-full rounded-2xl bg-emerald-500 px-4 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                        disabled={isUpdating}
+                        className={`mt-4 w-full rounded-2xl px-4 py-3 font-bold transition ${
+                          isUpdating
+                            ? "cursor-not-allowed bg-slate-800 text-slate-500"
+                            : "bg-emerald-500 text-slate-950 hover:-translate-y-0.5 hover:bg-emerald-400"
+                        }`}
                       >
-                        I&apos;m here
+                        {isUpdating ? "Working..." : "I'm here"}
                       </button>
                     )}
 
