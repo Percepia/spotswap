@@ -50,8 +50,17 @@ export default function Home() {
             </div>
           </a>
 
-          <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
-            Beta
+          <div className="flex items-center gap-3">
+            <a
+              href="/login"
+              className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
+            >
+              Login
+            </a>
+
+            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+              Beta
+            </div>
           </div>
         </header>
 
@@ -77,14 +86,14 @@ export default function Home() {
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <a
-                href="/leaving"
+                href="/login"
                 className="rounded-2xl bg-emerald-500 px-8 py-4 text-center text-base font-bold text-slate-950 shadow-xl shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-400"
               >
                 🚗 I&apos;m Leaving
               </a>
 
               <a
-                href="/looking"
+                href="/login"
                 className="rounded-2xl border border-slate-700 bg-slate-900/50 px-8 py-4 text-center text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-900"
               >
                 🔎 I&apos;m Looking
@@ -240,21 +249,22 @@ export default function Home() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-emerald-500/30">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl">
-                🚗
+                🔐
               </div>
-              <h2 className="mt-5 text-xl font-bold">You&apos;re leaving</h2>
+              <h2 className="mt-5 text-xl font-bold">Login first</h2>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                Post your area, landmark, and how soon you&apos;re moving out.
+                Create a driver account so handovers are safer and controlled.
               </p>
             </div>
 
             <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 transition hover:-translate-y-1 hover:border-emerald-500/30">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl">
-                🔎
+                🚗
               </div>
-              <h2 className="mt-5 text-xl font-bold">Someone finds you</h2>
+              <h2 className="mt-5 text-xl font-bold">Choose your mode</h2>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                Nearby drivers see the spot and reserve the handover.
+                Select whether you&apos;re leaving a spot or looking for one
+                right now.
               </p>
             </div>
 
@@ -262,9 +272,10 @@ export default function Home() {
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl">
                 🤝
               </div>
-              <h2 className="mt-5 text-xl font-bold">Smooth handover</h2>
+              <h2 className="mt-5 text-xl font-bold">Confirm handover</h2>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                You leave when they arrive. Simple, fast, and less stressful.
+                Details unlock after reservation, then both drivers confirm the
+                handover.
               </p>
             </div>
           </div>
