@@ -1,6 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type CarProfile = {
+  carModel: string;
+  carColor: string;
+  plateNumber: string;
+};
 
 type ParkingSpot = {
   id: number;
@@ -10,9 +16,30 @@ type ParkingSpot = {
   note: string;
   location: string;
   createdAt: string;
+  status:
+    | "available"
+    | "reserved"
+    | "arrived"
+    | "spotted"
+    | "leaving"
+    | "completed"
+    | "cancelled";
+
+  leaverCarModel: string;
+  leaverCarColor: string;
+  leaverPlateNumber: string;
+
+  lookerCarModel?: string;
+  lookerCarColor?: string;
+  lookerPlateNumber?: string;
 };
 
 export default function LeavingPage() {
+  const [profile, setProfile] = useState<CarProfile | null>(null);
+  const [setupCarModel, setSetupCarModel] = useState("");
+  const [setupCarColor, setSetupCarColor] = useState("");
+  const [setupPlateNumber, setSetupPlateNumber] = useState("");
+
   const [area, setArea] = useState("");
   const [landmark, setLandmark] = useState("");
   const [note, setNote] = useState("");
@@ -20,6 +47,64 @@ export default function LeavingPage() {
   const [locationStatus, setLocationStatus] = useState("");
   const [hasLocation, setHasLocation] = useState(false);
   const [posted, setPosted] = useState(false);
+  const [spots, setSpots] = useState<ParkingSpot[]>([]);
+
+  useEffect(() => {
+    loadProfile();
+    loadSpots();
+  }, []);
+
+  function loadProfile() {
+    const savedProfileText = localStorage.getItem("park_habibi_profile");
+    const savedProfile: CarProfile | null = savedProfileText
+      ? JSON.parse(savedProfileText)
+      : null;
+
+    setProfile(savedProfile);
+  }
+
+  function loadSpots() {
+    const savedSpotsText = localStorage.getItem("park_habibi_spots");
+    const savedSpots: ParkingSpot[] = savedSpotsText
+      ? JSON.parse(savedSpotsText)
+      : [];
+
+    setSpots(savedSpots);
+  }
+
+  function saveProfile() {
+    if (!setupCarModel.trim()) {
+      alert("Please enter your car model.");
+      return;
+    }
+
+    if (!setupCarColor.trim()) {
+      alert("Please enter your car color.");
+      return;
+    }
+
+    if (!setupPlateNumber.trim()) {
+      alert("Please enter your plate number.");
+      return;
+    }
+
+    const newProfile: CarProfile = {
+      carModel: setupCarModel,
+      carColor: setupCarColor,
+      plateNumber: setupPlateNumber,
+    };
+
+    localStorage.setItem("park_habibi_profile", JSON.stringify(newProfile));
+    setProfile(newProfile);
+  }
+
+  function resetProfile() {
+    localStorage.removeItem("park_habibi_profile");
+    setProfile(null);
+    setSetupCarModel("");
+    setSetupCarColor("");
+    setSetupPlateNumber("");
+  }
 
   function useMyLocation() {
     setPosted(false);
@@ -52,6 +137,11 @@ export default function LeavingPage() {
   }
 
   function postSpot() {
+    if (!profile) {
+      alert("Please set up your car first.");
+      return;
+    }
+
     if (!area.trim()) {
       alert("Please enter the area.");
       return;
@@ -75,6 +165,11 @@ export default function LeavingPage() {
       note,
       location: "Shabia, Abu Dhabi",
       createdAt: new Date().toISOString(),
+      status: "available",
+
+      leaverCarModel: profile.carModel,
+      leaverCarColor: profile.carColor,
+      leaverPlateNumber: profile.plateNumber,
     };
 
     const existingSpotsText = localStorage.getItem("park_habibi_spots");
@@ -86,8 +181,36 @@ export default function LeavingPage() {
 
     localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
 
+    setSpots(updatedSpots);
     setPosted(true);
   }
+
+  function updateSpotStatus(
+    spotId: number,
+    newStatus: ParkingSpot["status"]
+  ) {
+    const savedSpotsText = localStorage.getItem("park_habibi_spots");
+    const savedSpots: ParkingSpot[] = savedSpotsText
+      ? JSON.parse(savedSpotsText)
+      : [];
+
+    const updatedSpots = savedSpots.map((spot) =>
+      spot.id === spotId ? { ...spot, status: newStatus } : spot
+    );
+
+    localStorage.setItem("park_habibi_spots", JSON.stringify(updatedSpots));
+    setSpots(updatedSpots);
+  }
+
+  const myPostedSpots = profile
+    ? spots.filter(
+        (spot) =>
+          spot.leaverCarModel === profile.carModel &&
+          spot.leaverPlateNumber === profile.plateNumber &&
+          spot.status !== "completed" &&
+          spot.status !== "cancelled"
+      )
+    : [];
 
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -140,38 +263,13 @@ export default function LeavingPage() {
 
             <div className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-5">
               <p className="text-sm font-bold text-slate-300">
-                How this works
+                Car-based identity
               </p>
-
-              <div className="mt-4 space-y-4">
-                <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-black text-emerald-400">
-                    1
-                  </div>
-                  <p className="text-sm leading-6 text-slate-400">
-                    Add your area and nearby landmark.
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-black text-emerald-400">
-                    2
-                  </div>
-                  <p className="text-sm leading-6 text-slate-400">
-                    Choose when you&apos;re leaving.
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-black text-emerald-400">
-                    3
-                  </div>
-                  <p className="text-sm leading-6 text-slate-400">
-                    Someone nearby reserves the handover and arrives before you
-                    move out.
-                  </p>
-                </div>
-              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                No names. No profile photos. Park Habibi only uses car model,
+                color, and plate number so drivers can identify each other
+                during the handover.
+              </p>
             </div>
 
             <div className="mt-5 rounded-3xl border border-amber-500/20 bg-amber-500/10 p-5">
@@ -187,150 +285,400 @@ export default function LeavingPage() {
             </div>
           </div>
 
-          <div className="animate-fade-up-delayed">
-            <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
-              <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
+          <div className="animate-fade-up-delayed space-y-5">
+            {!profile && (
+              <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+                <div className="mb-6">
                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
-                    Handover details
+                    First-time setup
                   </p>
-                  <h2 className="mt-2 text-2xl font-black">Post your spot</h2>
+                  <h2 className="mt-2 text-2xl font-black">
+                    Tell us your car
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    This is used only to help the other driver identify your car.
+                  </p>
                 </div>
 
-                <div className="rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-400">
-                  Beta
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                      Car model
+                    </label>
+                    <input
+                      type="text"
+                      value={setupCarModel}
+                      onChange={(event) => setSetupCarModel(event.target.value)}
+                      placeholder="Example: Pajero"
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                      Car color
+                    </label>
+                    <input
+                      type="text"
+                      value={setupCarColor}
+                      onChange={(event) => setSetupCarColor(event.target.value)}
+                      placeholder="Example: White"
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                      Plate number only
+                    </label>
+                    <input
+                      type="text"
+                      value={setupPlateNumber}
+                      onChange={(event) =>
+                        setSetupPlateNumber(event.target.value)
+                      }
+                      placeholder="Example: 43827"
+                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">
+                      No plate code needed for now.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={saveProfile}
+                    className="w-full rounded-2xl bg-emerald-500 px-6 py-4 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                  >
+                    Save Car Details
+                  </button>
                 </div>
-              </div>
+              </section>
+            )}
 
-              {posted && (
-                <div className="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-                  Your spot has been posted for {leavingIn}. Someone looking
-                  for parking can now see it.
-                </div>
-              )}
+            {profile && (
+              <>
+                <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
+                        Your car
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black">
+                        {profile.carColor} {profile.carModel}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Plate number: {profile.plateNumber}
+                      </p>
+                    </div>
 
-              <form className="space-y-5">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
-                    Area
-                  </label>
-                  <input
-                    type="text"
-                    value={area}
-                    onChange={(event) => {
-                      setArea(event.target.value);
-                      setPosted(false);
-                    }}
-                    placeholder="Example: Shabia 10"
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
-                    Nearby building or landmark
-                  </label>
-                  <input
-                    type="text"
-                    value={landmark}
-                    onChange={(event) => {
-                      setLandmark(event.target.value);
-                      setPosted(false);
-                    }}
-                    placeholder="Example: Near Lulu / Building 43"
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
-                    Location
-                  </label>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      onClick={useMyLocation}
-                      className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400"
+                      onClick={resetProfile}
+                      className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-red-400 hover:text-red-300"
                     >
-                      📍 Use my location
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={useTestLocation}
-                      className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400"
-                    >
-                      🧪 Use test location
+                      Change
                     </button>
                   </div>
 
-                  {locationStatus && (
-                    <p
-                      className={`mt-2 text-sm ${
-                        hasLocation ? "text-emerald-400" : "text-slate-400"
-                      }`}
-                    >
-                      {locationStatus}
-                    </p>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-400">
+                    Exact location and plate details are shown to the looker
+                    only after they reserve your handover.
+                  </div>
+                </section>
+
+                <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+                  <div className="mb-6 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
+                        Handover details
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black">
+                        Post your spot
+                      </h2>
+                    </div>
+
+                    <div className="rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-400">
+                      Beta
+                    </div>
+                  </div>
+
+                  {posted && (
+                    <div className="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
+                      Your spot has been posted for {leavingIn}. Someone
+                      looking for parking can now reserve it.
+                    </div>
                   )}
-                </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
-                    Leaving in
-                  </label>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {["2 min", "5 min", "10 min"].map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => {
-                          setLeavingIn(time);
+                  <form className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                        Area
+                      </label>
+                      <input
+                        type="text"
+                        value={area}
+                        onChange={(event) => {
+                          setArea(event.target.value);
                           setPosted(false);
                         }}
-                        className={`rounded-2xl border px-4 py-3 font-semibold transition ${
-                          leavingIn === time
-                            ? "border-emerald-500 bg-emerald-500 text-slate-950"
-                            : "border-slate-700 bg-slate-950 text-white hover:border-emerald-500 hover:text-emerald-400"
-                        }`}
+                        placeholder="Example: Shabia 10"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                      />
+                      <p className="mt-2 text-xs text-slate-500">
+                        This is visible before reservation.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                        Exact nearby building or landmark
+                      </label>
+                      <input
+                        type="text"
+                        value={landmark}
+                        onChange={(event) => {
+                          setLandmark(event.target.value);
+                          setPosted(false);
+                        }}
+                        placeholder="Example: Near Lulu / Building 43"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                      />
+                      <p className="mt-2 text-xs text-slate-500">
+                        Hidden until the looker reserves the handover.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                        Location
+                      </label>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={useMyLocation}
+                          className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400"
+                        >
+                          📍 Use my location
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={useTestLocation}
+                          className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-white transition hover:border-emerald-500 hover:text-emerald-400"
+                        >
+                          🧪 Use test location
+                        </button>
+                      </div>
+
+                      {locationStatus && (
+                        <p
+                          className={`mt-2 text-sm ${
+                            hasLocation ? "text-emerald-400" : "text-slate-400"
+                          }`}
+                        >
+                          {locationStatus}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                        Leaving in
+                      </label>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        {["2 min", "5 min", "10 min"].map((time) => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => {
+                              setLeavingIn(time);
+                              setPosted(false);
+                            }}
+                            className={`rounded-2xl border px-4 py-3 font-semibold transition ${
+                              leavingIn === time
+                                ? "border-emerald-500 bg-emerald-500 text-slate-950"
+                                : "border-slate-700 bg-slate-950 text-white hover:border-emerald-500 hover:text-emerald-400"
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                        Note
+                      </label>
+                      <textarea
+                        value={note}
+                        onChange={(event) => {
+                          setNote(event.target.value);
+                          setPosted(false);
+                        }}
+                        placeholder="Example: Front side of building, near entrance"
+                        rows={4}
+                        className="w-full resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
+                      />
+                      <p className="mt-2 text-xs text-slate-500">
+                        Hidden until reservation.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={postSpot}
+                      className={`w-full rounded-2xl px-6 py-4 font-bold transition ${
+                        hasLocation
+                          ? "bg-emerald-500 text-slate-950 hover:-translate-y-0.5 hover:bg-emerald-400"
+                          : "cursor-not-allowed bg-slate-800 text-slate-500"
+                      }`}
+                    >
+                      Share Spot
+                    </button>
+                  </form>
+                </section>
+
+                <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
+                        Leaver control
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black">
+                        Your active handovers
+                      </h2>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={loadSpots}
+                      className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-emerald-500 hover:text-emerald-400"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  {myPostedSpots.length === 0 && (
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-500">
+                      No active handovers yet. Post a spot first.
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {myPostedSpots.map((spot) => (
+                      <div
+                        key={spot.id}
+                        className="rounded-3xl border border-slate-800 bg-slate-950 p-5"
                       >
-                        {time}
-                      </button>
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-lg font-black">{spot.area}</p>
+                            <p className="mt-1 text-sm text-slate-400">
+                              Leaving in {spot.leavingIn}
+                            </p>
+                          </div>
+
+                          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-400">
+                            {spot.status}
+                          </span>
+                        </div>
+
+                        {spot.status === "available" && (
+                          <p className="mt-4 text-sm leading-6 text-slate-400">
+                            Waiting for someone to reserve your handover.
+                          </p>
+                        )}
+
+                        {(spot.status === "reserved" ||
+                          spot.status === "arrived" ||
+                          spot.status === "spotted" ||
+                          spot.status === "leaving") && (
+                          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                              Arriving car
+                            </p>
+                            <p className="mt-2 font-bold">
+                              {spot.lookerCarColor} {spot.lookerCarModel}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-400">
+                              Plate number: {spot.lookerPlateNumber}
+                            </p>
+                          </div>
+                        )}
+
+                        {spot.status === "reserved" && (
+                          <p className="mt-4 text-sm leading-6 text-slate-400">
+                            The looker has reserved your handover. Wait until
+                            they click “I&apos;m here”.
+                          </p>
+                        )}
+
+                        {spot.status === "arrived" && (
+                          <>
+                            <p className="mt-4 text-sm leading-6 text-slate-300">
+                              The looker says they&apos;re here. Check for their
+                              car and confirm only if you can see them.
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSpotStatus(spot.id, "spotted")
+                              }
+                              className="mt-4 w-full rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                            >
+                              Spotted you
+                            </button>
+                          </>
+                        )}
+
+                        {spot.status === "spotted" && (
+                          <>
+                            <p className="mt-4 text-sm leading-6 text-slate-300">
+                              Mutual confirmation complete. Move out when it is
+                              safe.
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSpotStatus(spot.id, "leaving")
+                              }
+                              className="mt-4 w-full rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                            >
+                              I&apos;m leaving now
+                            </button>
+                          </>
+                        )}
+
+                        {spot.status === "leaving" && (
+                          <>
+                            <p className="mt-4 text-sm leading-6 text-slate-300">
+                              You are moving out. Complete the handover once the
+                              spot is free.
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateSpotStatus(spot.id, "completed")
+                              }
+                              className="mt-4 w-full rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-400"
+                            >
+                              Complete handover
+                            </button>
+                          </>
+                        )}
+                      </div>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
-                    Note
-                  </label>
-                  <textarea
-                    value={note}
-                    onChange={(event) => {
-                      setNote(event.target.value);
-                      setPosted(false);
-                    }}
-                    placeholder="Example: White Pajero, front side of building"
-                    rows={4}
-                    className="w-full resize-none rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={postSpot}
-                  className={`w-full rounded-2xl px-6 py-4 font-bold transition ${
-                    hasLocation
-                      ? "bg-emerald-500 text-slate-950 hover:-translate-y-0.5 hover:bg-emerald-400"
-                      : "cursor-not-allowed bg-slate-800 text-slate-500"
-                  }`}
-                >
-                  Share Spot
-                </button>
-              </form>
-            </section>
+                </section>
+              </>
+            )}
           </div>
         </section>
 
