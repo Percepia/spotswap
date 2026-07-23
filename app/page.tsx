@@ -143,20 +143,25 @@ export default function Home() {
             </div>
           </div>
         </section>
+        
+<section className="mx-auto max-w-7xl px-6 pb-16 lg:px-10">
+  <div className="rounded-[2rem] border border-yellow-400/30 bg-yellow-400/10 p-6 text-center shadow-2xl shadow-yellow-500/5">
+    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-400/20 text-2xl">
+      ⚠️
+    </div>
 
-        <section className="mx-auto max-w-7xl px-6 pb-16 lg:px-10">
-          <div className="rounded-[2rem] border border-slate-800 bg-slate-900/50 p-6 text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
-              Important
-            </p>
-            <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-slate-400">
-              Park Habibi helps drivers coordinate parking handovers. Users are
-              not buying, selling, or owning public parking spaces. The platform
-              is built around timing, communication, and convenience.
-            </p>
-          </div>
-        </section>
+    <p className="text-sm font-bold uppercase tracking-[0.25em] text-yellow-300">
+      Important
+    </p>
 
+    <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-yellow-100/80">
+      Park Habibi helps drivers coordinate parking handovers. Users are not
+      buying, selling, or owning public parking spaces. The platform is built
+      around timing, communication, and convenience.
+    </p>
+  </div>
+</section>
+        
         <footer className="mx-auto max-w-7xl border-t border-slate-800 px-6 py-8 text-sm text-slate-500 lg:px-10">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-semibold text-slate-300">Park Habibi</p>
