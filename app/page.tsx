@@ -1,33 +1,3 @@
-function VerticalCar() {
-  return (
-    <div className="relative h-36 w-16">
-      <div className="absolute left-1/2 top-0 h-36 w-16 -translate-x-1/2 rounded-[1.4rem] bg-slate-100 shadow-xl">
-        <div className="absolute left-2 top-5 h-8 w-12 rounded-lg bg-slate-300" />
-        <div className="absolute left-2 bottom-5 h-8 w-12 rounded-lg bg-slate-300" />
-
-        <div className="absolute -left-2 top-7 h-5 w-5 rounded-full border-4 border-slate-800 bg-slate-700" />
-        <div className="absolute -right-2 top-7 h-5 w-5 rounded-full border-4 border-slate-800 bg-slate-700" />
-        <div className="absolute -left-2 bottom-7 h-5 w-5 rounded-full border-4 border-slate-800 bg-slate-700" />
-        <div className="absolute -right-2 bottom-7 h-5 w-5 rounded-full border-4 border-slate-800 bg-slate-700" />
-      </div>
-    </div>
-  );
-}
-
-function HorizontalCar() {
-  return (
-    <div className="relative h-20 w-40 animate-car-nudge">
-      <div className="absolute left-0 top-5 h-12 w-40 rounded-[1.3rem] bg-emerald-500 shadow-xl shadow-emerald-500/20">
-        <div className="absolute left-7 top-3 h-6 w-9 rounded-lg bg-emerald-200/70" />
-        <div className="absolute right-7 top-3 h-6 w-9 rounded-lg bg-emerald-200/70" />
-
-        <div className="absolute left-3 top-8 h-5 w-5 rounded-full border-4 border-slate-900 bg-slate-800" />
-        <div className="absolute right-3 top-8 h-5 w-5 rounded-full border-4 border-slate-900 bg-slate-800" />
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -64,8 +34,8 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 pb-16 pt-8 lg:min-h-[calc(100vh-92px)] lg:grid-cols-[1fr_0.95fr] lg:px-10 lg:pb-20">
-          <div className="animate-fade-up">
+        <section className="mx-auto max-w-7xl px-6 pb-16 pt-8 lg:min-h-[calc(100vh-92px)] lg:px-10 lg:pb-20">
+          <div className="max-w-3xl animate-fade-up">
             <div className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400">
               Starting in Shabia, Abu Dhabi
             </div>
@@ -125,113 +95,6 @@ export default function Home() {
                 Park Habibi starts in Shabia, where finding parking at the
                 wrong time can mean endless rounds around the same buildings.
               </p>
-            </div>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-xl animate-fade-up-delayed">
-            <div className="absolute inset-0 rounded-[3rem] bg-emerald-500/10 blur-3xl" />
-
-            <div className="relative animate-float overflow-hidden rounded-[3rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/40 backdrop-blur">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
-                    Park Habibi Live
-                  </p>
-                  <p className="mt-2 text-xl font-bold">Shabia handover</p>
-                </div>
-
-                <div className="animate-soft-pulse rounded-2xl bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-400">
-                  5 min
-                </div>
-              </div>
-
-              <div className="relative h-[480px] overflow-hidden rounded-[2.4rem] border border-slate-800 bg-slate-950 p-5">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_28%,rgba(16,185,129,0.24),transparent_34%)]" />
-
-                <div className="absolute left-8 top-8 z-20">
-                  <div className="mb-3 inline-flex rounded-full border border-slate-700 bg-slate-900/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">
-                    Leaving
-                  </div>
-
-                  <div className="relative flex h-60 w-36 flex-col items-center rounded-[1.8rem] border border-dashed border-slate-600 bg-slate-900/60 p-4 shadow-xl">
-                    <div className="absolute inset-3 rounded-[1.3rem] border border-slate-800" />
-
-                    <VerticalCar />
-
-                    <div className="mt-auto text-center">
-                      <p className="text-sm font-bold text-white">White SUV</p>
-                      <p className="mt-1 text-xs text-slate-400">Near Lulu</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute right-12 top-36 z-20">
-                  <div className="mb-3 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                    Arriving
-                  </div>
-
-                  <div className="rounded-[1.8rem] border border-emerald-500/20 bg-emerald-500/10 p-4 shadow-xl backdrop-blur">
-                    <HorizontalCar />
-
-                    <div className="mt-2">
-                      <p className="text-sm font-bold text-white">
-                        Green sedan
-                      </p>
-                      <p className="mt-1 text-xs text-slate-400">250m away</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-24 left-8 right-8 h-24 rounded-[2rem] border border-slate-800 bg-slate-900/80">
-                  <div className="absolute left-6 right-6 top-1/2 h-[2px] -translate-y-1/2 bg-[repeating-linear-gradient(to_right,rgba(148,163,184,0.5)_0,rgba(148,163,184,0.5)_28px,transparent_28px,transparent_48px)]" />
-                </div>
-
-                <div className="absolute bottom-32 right-8 z-0">
-                  <div className="h-36 w-3 rounded-full bg-slate-500" />
-                  <div className="absolute -right-8 top-8 h-2 w-14 rounded-full bg-slate-500" />
-                  <div className="absolute -right-12 top-5 h-10 w-10 animate-lamp-glow rounded-b-2xl rounded-t-md border border-emerald-300/40 bg-emerald-300/20 shadow-[0_0_70px_rgba(16,185,129,0.45)]" />
-                  <div className="absolute -right-24 -top-8 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
-                  <div className="absolute -right-16 top-8 h-24 w-24 rounded-full bg-emerald-400/20 blur-2xl" />
-                </div>
-
-                <div className="absolute bottom-7 left-1/2 z-30 w-[78%] -translate-x-1/2 rounded-2xl border border-slate-800 bg-slate-900/95 p-4 shadow-xl">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                        Status
-                      </p>
-                      <p className="mt-1 font-bold">
-                        Smooth handover in progress
-                      </p>
-                    </div>
-
-                    <div className="h-3 w-3 animate-status-dot rounded-full bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center transition hover:-translate-y-1 hover:border-emerald-500/30">
-                <p className="text-2xl">📍</p>
-                <p className="mt-2 text-xs font-semibold text-slate-400">
-                  Post location
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center transition hover:-translate-y-1 hover:border-emerald-500/30">
-                <p className="text-2xl">⏱️</p>
-                <p className="mt-2 text-xs font-semibold text-slate-400">
-                  Wait 5 mins
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center transition hover:-translate-y-1 hover:border-emerald-500/30">
-                <p className="text-2xl">🤝</p>
-                <p className="mt-2 text-xs font-semibold text-slate-400">
-                  Handover
-                </p>
-              </div>
             </div>
           </div>
         </section>
