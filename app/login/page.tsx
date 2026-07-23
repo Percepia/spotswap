@@ -1,19 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+type Profile = {
+  id: string;
+  car_model: string;
+  car_color: string;
+  plate_number: string;
+};
 
 export default function LoginPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  async function checkExistingSession() {
+    setIsCheckingSession(true);
+
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      setMessage("Could not check login session. Please login again.");
+      setIsCheckingSession(false);
+      return;
+    }
+
+    if (!session) {
+      setIsCheckingSession(false);
+      return;
+    }
+
+    await sendUserToCorrectPlace(session.user.id);
+  }
+
+  async function sendUserToCorrectPlace(userId: string) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      setMessage("Could not load your profile. Please try again.");
+      setIsCheckingSession(false);
+      setIsLoading(false);
+      return;
+    }
+
+    if (data) {
+      const profile = data as Profile;
+
+      localStorage.setItem(
+        "park_habibi_profile",
+        JSON.stringify({
+          carModel: profile.car_model,
+          carColor: profile.car_color,
+          plateNumber: profile.plate_number,
+        })
+      );
+
+      window.location.href = "/mode";
+      return;
+    }
+
+    window.location.href = "/profile";
+  }
 
   async function signUp() {
     if (!email.trim()) {
@@ -29,24 +91,29 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signUp({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
       password,
       options: {
-    emailRedirectTo: `${window.location.origin}/profile`,
-  },
+        emailRedirectTo: `${window.location.origin}/profile`,
+      },
     });
-
-    setIsLoading(false);
 
     if (error) {
       setMessage(error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    if (data.session && data.user) {
+      await sendUserToCorrectPlace(data.user.id);
       return;
     }
 
     setMessage(
-      "Account created. If Supabase asks for confirmation, check your email. Otherwise, click Login."
+      "Account created. Please check your email to confirm your account, then login."
     );
+    setIsLoading(false);
   }
 
   async function signIn() {
@@ -63,19 +130,37 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
       password,
     });
 
-    setIsLoading(false);
-
     if (error) {
       setMessage(error.message);
+      setIsLoading(false);
       return;
     }
 
-    window.location.href = "/profile";
+    if (!data.user) {
+      setMessage("Login failed. Please try again.");
+      setIsLoading(false);
+      return;
+    }
+
+    await sendUserToCorrectPlace(data.user.id);
+  }
+
+  if (isCheckingSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
+        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 text-center shadow-2xl shadow-black/30">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-xl font-black text-slate-950">
+            P
+          </div>
+          <p className="text-sm text-slate-400">Checking your login...</p>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -114,31 +199,22 @@ export default function LoginPage() {
             </div>
 
             <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">
-              Enter as a
-              <span className="block text-emerald-400">driver.</span>
+              Welcome to
+              <span className="block text-emerald-400">Park Habibi.</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-              Login keeps handovers safer. Only the leaver can control their
-              posted spot, and only the reserved looker can confirm arrival.
+              Login once and your account stays saved. Your car profile and
+              handover history stay connected to your account.
             </p>
 
             <div className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-5">
               <p className="text-sm font-bold text-slate-300">
-                Privacy-first identity
+                Privacy-first driver identity
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                No public names. No profile pictures. Your account protects the
-                handover flow. Your car details are used only for identification
-                during a confirmed handover.
-              </p>
-            </div>
-
-            <div className="mt-5 rounded-3xl border border-amber-500/20 bg-amber-500/10 p-5">
-              <p className="text-sm font-bold text-amber-300">MVP note</p>
-              <p className="mt-2 text-sm leading-6 text-amber-100/70">
-                We are using email login for now because mobile OTP requires
-                paid SMS provider setup. Phone login can be added later.
+                No public names. No profile pictures. Car details are used only
+                to help drivers identify each other during a confirmed handover.
               </p>
             </div>
           </div>
@@ -148,9 +224,11 @@ export default function LoginPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
                 Account
               </p>
-              <h2 className="mt-2 text-2xl font-black">Login or sign up</h2>
+              <h2 className="mt-2 text-2xl font-black">
+                Login or create account
+              </h2>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                Create an account with email and password.
+                Use your email and password to continue.
               </p>
             </div>
 
@@ -208,6 +286,11 @@ export default function LoginPage() {
               >
                 Create account
               </button>
+
+              <p className="text-center text-xs leading-5 text-slate-500">
+                By continuing, you agree to use Park Habibi only for parking
+                handover coordination and to follow local parking rules.
+              </p>
             </div>
           </div>
         </section>

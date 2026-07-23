@@ -12,6 +12,8 @@ type Profile = {
 
 export default function ProfilePage() {
   const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
+
   const [carModel, setCarModel] = useState("");
   const [carColor, setCarColor] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
@@ -29,7 +31,14 @@ export default function ProfilePage() {
 
     const {
       data: { session },
+      error: sessionError,
     } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      alert("Could not check login session.");
+      window.location.href = "/login";
+      return;
+    }
 
     if (!session) {
       window.location.href = "/login";
@@ -38,6 +47,7 @@ export default function ProfilePage() {
 
     const currentUserId = session.user.id;
     setUserId(currentUserId);
+    setEmail(session.user.email || "");
 
     const { data, error } = await supabase
       .from("profiles")
@@ -46,7 +56,7 @@ export default function ProfilePage() {
       .maybeSingle();
 
     if (error) {
-      alert("Could not load profile: " + error.message);
+      alert("Could not load your car profile: " + error.message);
       setIsLoading(false);
       return;
     }
@@ -57,6 +67,15 @@ export default function ProfilePage() {
       setCarModel(profile.car_model);
       setCarColor(profile.car_color);
       setPlateNumber(profile.plate_number);
+
+      localStorage.setItem(
+        "park_habibi_profile",
+        JSON.stringify({
+          carModel: profile.car_model,
+          carColor: profile.car_color,
+          plateNumber: profile.plate_number,
+        })
+      );
     }
 
     setIsLoading(false);
@@ -81,30 +100,35 @@ export default function ProfilePage() {
     setIsSaving(true);
     setMessage("");
 
+    const cleanCarModel = carModel.trim();
+    const cleanCarColor = carColor.trim();
+    const cleanPlateNumber = plateNumber.trim();
+
     const { error } = await supabase.from("profiles").upsert({
       id: userId,
-      car_model: carModel.trim(),
-      car_color: carColor.trim(),
-      plate_number: plateNumber.trim(),
+      car_model: cleanCarModel,
+      car_color: cleanCarColor,
+      plate_number: cleanPlateNumber,
     });
-
-    setIsSaving(false);
 
     if (error) {
       setMessage(error.message);
+      setIsSaving(false);
       return;
     }
 
     localStorage.setItem(
       "park_habibi_profile",
       JSON.stringify({
-        carModel: carModel.trim(),
-        carColor: carColor.trim(),
-        plateNumber: plateNumber.trim(),
+        carModel: cleanCarModel,
+        carColor: cleanCarColor,
+        plateNumber: cleanPlateNumber,
       })
     );
 
     setMessage("Car profile saved.");
+    setIsSaving(false);
+
     window.location.href = "/mode";
   }
 
@@ -152,22 +176,23 @@ export default function ProfilePage() {
             </div>
 
             <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">
-              Tell us your
-              <span className="block text-emerald-400">car.</span>
+              Your car,
+              <span className="block text-emerald-400">your identity.</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-              No names. No profile photos. Your car details help the other
-              driver identify you during a confirmed handover.
+              Park Habibi does not need public names or profile photos. Your car
+              profile helps the other driver identify you during a confirmed
+              handover.
             </p>
 
             <div className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-5">
               <p className="text-sm font-bold text-slate-300">
-                What is shown?
+                Saved to your account
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                Your car model, color, and plate number are shown only when
-                needed for the handover flow.
+                When you come back later, your car profile will load from your
+                Park Habibi account.
               </p>
             </div>
           </div>
@@ -178,14 +203,17 @@ export default function ProfilePage() {
                 Driver details
               </p>
               <h2 className="mt-2 text-2xl font-black">Your vehicle</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                These details are saved securely in Supabase.
-              </p>
+
+              {email && (
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  Logged in as {email}
+                </p>
+              )}
             </div>
 
             {isLoading ? (
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
-                Loading profile...
+                Loading your profile...
               </div>
             ) : (
               <div className="space-y-5">
@@ -227,7 +255,7 @@ export default function ProfilePage() {
                     className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
                   />
                   <p className="mt-2 text-xs text-slate-500">
-                    No plate code needed for MVP.
+                    Plate code is not required.
                   </p>
                 </div>
 
