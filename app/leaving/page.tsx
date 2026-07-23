@@ -74,7 +74,7 @@ export default function LeavingPage() {
 
     const refreshTimer = setInterval(() => {
       loadMySpots();
-    }, 3000);
+    }, 15000);
 
     return () => {
       supabase.removeChannel(channel);

@@ -68,7 +68,7 @@ export default function LookingPage() {
 
     const refreshTimer = setInterval(() => {
       loadAvailableSpots();
-    }, 3000);
+    }, 15000);
 
     return () => {
       supabase.removeChannel(channel);
