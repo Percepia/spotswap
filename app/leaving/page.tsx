@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import ParkingLocationPicker, {
+  type ParkingCoordinates,
+} from "@/components/ParkingLocationPicker";
 import { supabase } from "@/lib/supabase";
 
 type Profile = {
@@ -17,6 +20,10 @@ type ParkingSpot = {
   leaving_in: string;
   note: string | null;
   location: string;
+  exact_latitude: number | null;
+  exact_longitude: number | null;
+  approximate_latitude: number | null;
+  approximate_longitude: number | null;
   status:
     | "available"
     | "reserved"
@@ -38,8 +45,28 @@ type ParkingSpot = {
 
 const activeStatuses = ["available", "reserved", "arrived", "spotted", "leaving"];
 
+function createApproximateLocation(
+  coordinates: ParkingCoordinates
+): ParkingCoordinates {
+  const distanceInMetres = 120 + Math.random() * 100;
+  const bearingInRadians = Math.random() * Math.PI * 2;
+
+  const latitudeOffset =
+    (distanceInMetres * Math.cos(bearingInRadians)) / 111_320;
+
+  const longitudeScale =
+    111_320 * Math.cos((coordinates.latitude * Math.PI) / 180);
+
+  const longitudeOffset =
+    (distanceInMetres * Math.sin(bearingInRadians)) / longitudeScale;
+
+  return {
+    latitude: coordinates.latitude + latitudeOffset,
+    longitude: coordinates.longitude + longitudeOffset,
+  };
+}
+
 export default function LeavingPage() {
-  const [userId, setUserId] = useState("");
   const userIdRef = useRef("");
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -48,11 +75,20 @@ export default function LeavingPage() {
   const [landmark, setLandmark] = useState("");
   const [leavingIn, setLeavingIn] = useState("Now");
   const [note, setNote] = useState("");
+  const [parkingCoordinates, setParkingCoordinates] =
+    useState<ParkingCoordinates | null>(null);
 
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const [message, setMessage] = useState("");
+
+  const handleLocationChange = useCallback(
+    (coordinates: ParkingCoordinates) => {
+      setParkingCoordinates(coordinates);
+    },
+    []
+  );
 
   useEffect(() => {
     startPage();
@@ -72,13 +108,13 @@ export default function LeavingPage() {
       )
       .subscribe();
 
-    const refreshTimer = setInterval(() => {
+    const refreshTimer = window.setInterval(() => {
       loadMySpots();
     }, 15000);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(refreshTimer);
+      window.clearInterval(refreshTimer);
     };
   }, []);
 
@@ -95,7 +131,6 @@ export default function LeavingPage() {
     }
 
     const currentUserId = session.user.id;
-    setUserId(currentUserId);
     userIdRef.current = currentUserId;
 
     const { data: profileData, error: profileError } = await supabase
@@ -159,6 +194,16 @@ export default function LeavingPage() {
       return;
     }
 
+    if (!area.trim()) {
+      alert("Please enter the area.");
+      return;
+    }
+
+    if (!parkingCoordinates) {
+      alert("Please select your exact parking location on the map.");
+      return;
+    }
+
     if (!landmark.trim()) {
       alert("Please enter the exact landmark.");
       return;
@@ -167,12 +212,19 @@ export default function LeavingPage() {
     setIsPosting(true);
     setMessage("");
 
+    const approximateCoordinates =
+      createApproximateLocation(parkingCoordinates);
+
     const { error } = await supabase.from("parking_spots").insert({
       area: area.trim(),
       landmark: landmark.trim(),
       leaving_in: leavingIn,
       note: note.trim() || null,
-      location: "Shabia, Abu Dhabi",
+      location: `${area.trim()}, Abu Dhabi`,
+      exact_latitude: parkingCoordinates.latitude,
+      exact_longitude: parkingCoordinates.longitude,
+      approximate_latitude: approximateCoordinates.latitude,
+      approximate_longitude: approximateCoordinates.longitude,
       status: "available",
       leaver_id: userIdRef.current,
       leaver_car_model: profile.car_model,
@@ -189,6 +241,7 @@ export default function LeavingPage() {
     setLandmark("");
     setLeavingIn("Now");
     setNote("");
+    setParkingCoordinates(null);
     localStorage.setItem("park_habibi_active_mode", "leaver");
 
     await loadMySpots();
@@ -256,22 +309,26 @@ export default function LeavingPage() {
         <div className="absolute left-[-160px] top-[-160px] h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
         <div className="absolute right-[-120px] top-[160px] h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
 
-        <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-6 lg:px-10">
-          <a href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-xl font-black text-slate-950 shadow-lg shadow-emerald-500/20">
+        <header className="relative mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6 sm:py-6 lg:px-10">
+          <a href="/" className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-xl font-black text-slate-950 shadow-lg shadow-emerald-500/20">
               P
             </div>
 
-            <div>
-              <p className="text-lg font-bold leading-none">Park Habibi</p>
-              <p className="mt-1 text-xs text-slate-500">Leaving a spot</p>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold leading-none">
+                Park Habibi
+              </p>
+              <p className="mt-1 truncate text-xs text-slate-500">
+                Leaving a spot
+              </p>
             </div>
           </a>
 
-          <div className="flex items-center gap-3">
+          <div className="ml-3 flex shrink-0 items-center gap-2 sm:gap-3">
             <a
               href="/mode"
-              className="rounded-full border border-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400"
+              className="rounded-full border border-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400 sm:px-4 sm:text-sm"
             >
               Mode
             </a>
@@ -279,25 +336,25 @@ export default function LeavingPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-full border border-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-red-400 hover:text-red-300"
+              className="rounded-full border border-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-red-400 hover:text-red-300 sm:px-4 sm:text-sm"
             >
               Logout
             </button>
           </div>
         </header>
 
-        <section className="relative mx-auto grid max-w-6xl gap-8 px-6 pb-16 pt-10 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
+        <section className="relative mx-auto grid max-w-6xl gap-8 px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
           <div>
             <div className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400">
               Leaver mode
             </div>
 
-            <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">
+            <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-6xl">
               Post your
               <span className="block text-emerald-400">parking handover.</span>
             </h1>
 
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
               Share when you are leaving. A looking driver can reserve the
               handover and coordinate with your car details after reservation.
             </p>
@@ -321,8 +378,8 @@ export default function LeavingPage() {
             </button>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+          <div className="min-w-0 space-y-6">
+            <div className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
                 New handover
               </p>
@@ -339,6 +396,11 @@ export default function LeavingPage() {
                     className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-emerald-500"
                   />
                 </div>
+
+                <ParkingLocationPicker
+                  value={parkingCoordinates}
+                  onChange={handleLocationChange}
+                />
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-300">
@@ -406,7 +468,7 @@ export default function LeavingPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+            <div className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:p-6">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-400">
@@ -444,7 +506,7 @@ export default function LeavingPage() {
                           </p>
                         </div>
 
-                        <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
+                        <div className="self-start rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
                           {getStatusText(spot.status)}
                         </div>
                       </div>
