@@ -19,14 +19,18 @@ export const metadata: Metadata = {
 
   keywords: [
     "parking Abu Dhabi",
+    "find parking in Abu Dhabi",
     "find parking Abu Dhabi",
+    "parking app Abu Dhabi",
+    "parking app UAE",
     "live parking Abu Dhabi",
+    "live parking handover",
     "parking handover",
     "parking space Abu Dhabi",
     "Shabia parking",
     "Mohammed Bin Zayed City parking",
+    "MBZ parking",
     "Mussafah parking",
-    "UAE parking app",
     "Park Habibi",
   ],
 
@@ -57,7 +61,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Park Habibi — live parking handovers in Abu Dhabi",
+        alt: "Park Habibi — find parking in Abu Dhabi",
       },
     ],
   },
@@ -84,9 +88,30 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon-192.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
+      {
+        url: "/icon-512.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
     shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
 
   verification: googleVerification
@@ -117,6 +142,7 @@ export default function RootLayout({
     description: siteConfig.description,
     applicationCategory: "NavigationApplication",
     operatingSystem: "Web",
+    isAccessibleForFree: true,
     areaServed: {
       "@type": "City",
       name: "Abu Dhabi",

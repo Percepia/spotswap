@@ -22,9 +22,9 @@ export const siteConfig = {
   name: "Park Habibi",
   shortName: "Park Habibi",
   url: siteUrl,
-  title: "Park Habibi | Live Parking Handovers in Abu Dhabi",
+  title: "Park Habibi | Find Parking in Abu Dhabi",
   description:
-    "Find and share live parking handovers in Abu Dhabi. Reserve a spot from someone who is leaving and stop circling for parking.",
+    "Find parking in Abu Dhabi without circling. Park Habibi connects drivers leaving parking spaces with drivers looking for one through secure, live parking handovers. Save time, fuel, and frustration.",
   locale: "en_AE",
   location: "Abu Dhabi, United Arab Emirates",
 };
